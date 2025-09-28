@@ -1,0 +1,32 @@
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Receipt {
+  id        String   @id @default(cuid())
+  date      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  time      String
+  total     String
+  imageData String?
+  items     Item[]
+
+  @@map("receipts")
+}
+
+model Item {
+  id        String  @id @default(cuid())
+  name      String
+  price     String
+  receiptId String
+  quantity  String
+  receipt   Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+
+  @@map("items")
+}
