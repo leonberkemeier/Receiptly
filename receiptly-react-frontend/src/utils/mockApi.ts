@@ -327,6 +327,30 @@ export const setupMockApi = () => {
         }
       }
       
+      if (url.includes('/api/receipts/') && url.match(/\/api\/receipts\/[^/]+$/) && init?.method === 'DELETE') {
+        // Handle deleting receipt by ID
+        const receiptId = url.split('/').pop();
+        const receiptIndex = receipts.findIndex(r => r.id === receiptId);
+        
+        if (receiptIndex !== -1) {
+          receipts.splice(receiptIndex, 1);
+          
+          console.log('Mock API: Deleted receipt:', receiptId);
+          
+          return new Response('', {
+            status: 204,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } else {
+          return new Response(JSON.stringify({
+            detail: 'Receipt not found'
+          }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      }
+      
       if (url.includes('/api/receipts') && (!init?.method || init?.method === 'GET')) {
         const result = await mockApi.getReceipts();
         return new Response(JSON.stringify(result), {
