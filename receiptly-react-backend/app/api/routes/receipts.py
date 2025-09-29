@@ -7,8 +7,10 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from prisma import Prisma
 
+from app.core.auth import get_current_user
 from app.core.database import get_database
 from app.schemas.receipts import Receipt, ReceiptCreate, ReceiptUpdate
+from app.schemas.users import User
 
 router = APIRouter()
 
@@ -18,10 +20,12 @@ async def get_receipts(
     skip: int = 0,
     limit: int = 100,
     db: Prisma = Depends(get_database),
+    current_user: User = Depends(get_current_user),
 ):
-    """Get all receipts with pagination."""
+    """Get user's receipts with pagination."""
     try:
         receipts = await db.receipt.find_many(
+            where={"userId": current_user.id},
             skip=skip,
             take=limit,
             include={"items": True},
@@ -39,8 +43,9 @@ async def get_receipts(
 async def get_receipt(
     receipt_id: str,
     db: Prisma = Depends(get_database),
+    current_user: User = Depends(get_current_user),
 ):
-    """Get a specific receipt by ID."""
+    """Get a specific receipt by ID (only if owned by current user)."""
     try:
         receipt = await db.receipt.find_unique(
             where={"id": receipt_id},
@@ -51,6 +56,14 @@ async def get_receipt(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Receipt with ID {receipt_id} not found",
             )
+        
+        # Verify ownership
+        if receipt.userId != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Receipt with ID {receipt_id} not found",
+            )
+        
         return receipt
     except HTTPException:
         raise
@@ -65,8 +78,9 @@ async def get_receipt(
 async def create_receipt(
     receipt_data: ReceiptCreate,
     db: Prisma = Depends(get_database),
+    current_user: User = Depends(get_current_user),
 ):
-    """Create a new receipt with items."""
+    """Create a new receipt with items for the current user."""
     try:
         # Extract items data
         items_data = [item.model_dump(exclude={"receiptId"}) for item in receipt_data.items]
@@ -78,6 +92,7 @@ async def create_receipt(
                 "time": receipt_data.time,
                 "total": receipt_data.total,
                 "imageData": receipt_data.imageData,
+                "userId": current_user.id,
                 "items": {
                     "create": items_data
                 } if items_data else {},
@@ -97,12 +112,13 @@ async def update_receipt(
     receipt_id: str,
     receipt_data: ReceiptUpdate,
     db: Prisma = Depends(get_database),
+    current_user: User = Depends(get_current_user),
 ):
-    """Update an existing receipt."""
+    """Update an existing receipt (only if owned by current user)."""
     try:
-        # Check if receipt exists
+        # Check if receipt exists and is owned by user
         existing_receipt = await db.receipt.find_unique(where={"id": receipt_id})
-        if not existing_receipt:
+        if not existing_receipt or existing_receipt.userId != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Receipt with ID {receipt_id} not found",
@@ -129,12 +145,13 @@ async def update_receipt(
 async def delete_receipt(
     receipt_id: str,
     db: Prisma = Depends(get_database),
+    current_user: User = Depends(get_current_user),
 ):
-    """Delete a receipt and all its items."""
+    """Delete a receipt and all its items (only if owned by current user)."""
     try:
-        # Check if receipt exists
+        # Check if receipt exists and is owned by user
         existing_receipt = await db.receipt.find_unique(where={"id": receipt_id})
-        if not existing_receipt:
+        if not existing_receipt or existing_receipt.userId != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Receipt with ID {receipt_id} not found",

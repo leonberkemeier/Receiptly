@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Receipt, ReceiptItem } from '../types';
+import { authenticatedFetch } from '../utils/api';
 
 const Review: React.FC = () => {
   const [receiptData, setReceiptData] = useState<Receipt | null>(null);
@@ -76,14 +77,8 @@ const Review: React.FC = () => {
       
       console.log('About to make API call to /api/receipts');
       
-      // Get the API base URL
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-      const apiUrl = `${API_BASE_URL}/api/receipts/`;
-      
-      console.log('Making request to:', apiUrl);
-      
-      // Send to your PostgreSQL backend API
-      const response = await fetch(apiUrl, {
+      // Send to your PostgreSQL backend API with authentication
+      const response = await authenticatedFetch('/api/receipts/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

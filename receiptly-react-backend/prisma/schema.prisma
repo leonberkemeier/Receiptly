@@ -7,6 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  receipts  Receipt[]
+
+  @@map("users")
+}
+
 model Receipt {
   id        String   @id @default(cuid())
   date      String
@@ -15,7 +27,9 @@ model Receipt {
   time      String
   total     String
   imageData String?
+  userId    String
   items     Item[]
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("receipts")
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DatabaseReceipt } from '../types';
+import { authenticatedFetch } from '../utils/api';
 
 const Receipts: React.FC = () => {
   const [receipts, setReceipts] = useState<DatabaseReceipt[]>([]);
@@ -14,13 +15,9 @@ const Receipts: React.FC = () => {
   useEffect(() => {
     const fetchReceipts = async () => {
       try {
-        // Get the API base URL
-        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-        const apiUrl = `${API_BASE_URL}/api/receipts/`;
+        console.log('Fetching receipts with authentication...');
         
-        console.log('Fetching receipts from:', apiUrl);
-        
-        const response = await fetch(apiUrl);
+        const response = await authenticatedFetch('/api/receipts/');
         const result = await response.json();
         
         console.log('Receipts API response:', { ok: response.ok, status: response.status, result });
@@ -78,12 +75,9 @@ const Receipts: React.FC = () => {
     setDeleteMessage(null);
 
     try {
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-      const apiUrl = `${API_BASE_URL}/api/receipts/${receiptId}`;
-      
       console.log('Deleting receipt:', receiptId);
       
-      const response = await fetch(apiUrl, {
+      const response = await authenticatedFetch(`/api/receipts/${receiptId}`, {
         method: 'DELETE'
       });
       

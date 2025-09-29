@@ -28,6 +28,12 @@ class Settings(BaseSettings):
         description="Allowed CORS origins as comma-separated string",
     )
     
+    # Authentication
+    secret_key: str = Field(
+        default="your-secret-key-here-change-in-production-make-it-long-and-random",
+        description="JWT secret key for authentication",
+    )
+    
     def get_cors_origins(self) -> List[str]:
         """Parse CORS origins from comma-separated string."""
         return [origin.strip() for origin in self.cors_origins.split(",")]

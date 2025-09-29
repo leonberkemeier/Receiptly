@@ -45,6 +45,7 @@ export const authenticatedFetch = async (
   const authOptions: RequestInit = {
     ...options,
     headers: {
+      'Content-Type': 'application/json',
       ...options.headers,
       ...(token && { 'Authorization': `Bearer ${token}` }),
     },

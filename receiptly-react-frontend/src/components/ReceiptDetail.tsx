@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { DatabaseReceipt, ReceiptItem } from '../types';
+import { authenticatedFetch } from '../utils/api';
 
 const ReceiptDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,12 +24,9 @@ const ReceiptDetail: React.FC = () => {
       }
 
       try {
-        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-        const apiUrl = `${API_BASE_URL}/api/receipts/${id}`;
+        console.log('Fetching receipt with authentication...');
         
-        console.log('Fetching receipt from:', apiUrl);
-        
-        const response = await fetch(apiUrl);
+        const response = await authenticatedFetch(`/api/receipts/${id}`);
         const result = await response.json();
         
         console.log('Receipt API response:', { ok: response.ok, status: response.status, result });
@@ -169,9 +167,6 @@ const ReceiptDetail: React.FC = () => {
     setSaveMessage(null);
 
     try {
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-      const apiUrl = `${API_BASE_URL}/api/receipts/${id}`;
-      
       // Prepare update data (exclude readonly fields)
       const updateData = {
         date: editedReceipt.date,
@@ -184,7 +179,7 @@ const ReceiptDetail: React.FC = () => {
       
       console.log('Updating receipt:', updateData);
       
-      const response = await fetch(apiUrl, {
+      const response = await authenticatedFetch(`/api/receipts/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
