@@ -1,0 +1,106 @@
+# Receiptly Backend - Sample Caddyfile
+# Copy and modify this file for your Caddy configuration
+
+# For local development
+localhost:80 {
+    # Health check endpoint
+    handle /health {
+        reverse_proxy localhost:8000
+    }
+
+    # API endpoints
+    handle /api/* {
+        reverse_proxy localhost:8000
+    }
+
+    # Root endpoint (FastAPI docs, etc.)
+    handle /* {
+        reverse_proxy localhost:8000
+    }
+
+    # Enable logging
+    log {
+        output file /var/log/caddy/receiptly-backend.log
+    }
+}
+
+# For production with your domain
+# Replace your-api-domain.com with your actual domain
+your-api-domain.com {
+    # Rate limiting (optional)
+    rate_limit {
+        zone api {
+            key {remote_host}
+            window 1m
+            max_requests 100
+        }
+    }
+
+    # Security headers
+    header {
+        X-Frame-Options DENY
+        X-Content-Type-Options nosniff
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    }
+
+    # CORS headers (if needed - adjust origins)
+    @cors_preflight method OPTIONS
+    handle @cors_preflight {
+        header Access-Control-Allow-Origin "*"
+        header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        header Access-Control-Allow-Headers "Content-Type, Authorization"
+        header Access-Control-Max-Age "86400"
+        respond "" 204
+    }
+
+    # API endpoints with additional rate limiting
+    handle /api/auth/* {
+        rate_limit zone=api
+        header Access-Control-Allow-Origin "*"
+        header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        header Access-Control-Allow-Headers "Content-Type, Authorization"
+        reverse_proxy localhost:8000
+    }
+
+    # General API endpoints
+    handle /api/* {
+        rate_limit zone=api
+        header Access-Control-Allow-Origin "*"
+        header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        header Access-Control-Allow-Headers "Content-Type, Authorization"
+        reverse_proxy localhost:8000
+    }
+
+    # Health check (no rate limiting)
+    handle /health {
+        reverse_proxy localhost:8000
+    }
+
+    # Docs endpoints (optional, disable in production)
+    handle /docs {
+        reverse_proxy localhost:8000
+    }
+
+    handle /redoc {
+        reverse_proxy localhost:8000
+    }
+
+    # Root endpoint
+    handle /* {
+        reverse_proxy localhost:8000
+    }
+
+    # Logging
+    log {
+        output file /var/log/caddy/receiptly-backend.log {
+            roll_size 100mb
+            roll_keep 10
+        }
+        format json
+    }
+
+    # Automatic HTTPS
+    # Caddy will automatically obtain and renew SSL certificates
+}
