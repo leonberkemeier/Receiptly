@@ -1,0 +1,42 @@
+receiptly.leonberkemeier.de {
+    # Serve static files from the React build
+    root * /var/www/receiptly.leonberkemeier.de
+    
+    # Handle API requests - proxy to Docker backend
+    handle /api/* {
+        reverse_proxy localhost:8000 {
+            # Health check endpoint
+            health_uri /health
+            health_interval 30s
+            health_timeout 5s
+        }
+    }
+    
+    # Enable file serving with fallback for SPA routing
+    try_files {path} {path}/ /index.html
+    file_server
+    
+    # Enable gzip compression
+    encode gzip
+    
+    # Security headers
+    header {
+        # Enable HSTS
+        Strict-Transport-Security max-age=31536000;
+        # Prevent XSS attacks
+        X-Content-Type-Options nosniff
+        # Prevent clickjacking
+        X-Frame-Options DENY
+        # Enable XSS filtering
+        X-XSS-Protection "1; mode=block"
+    }
+    
+    # Logging
+    log {
+        output file /var/log/caddy/receiptly.log {
+            roll_size 100mb
+            roll_keep 5
+            roll_keep_for 720h
+        }
+    }
+}

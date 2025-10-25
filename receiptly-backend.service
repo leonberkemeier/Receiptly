@@ -1,0 +1,33 @@
+[Unit]
+Description=Receiptly Backend API
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/receiptly/receiptly-react-backend
+Environment=PATH=/opt/receiptly/venv/bin
+ExecStart=/opt/receiptly/venv/bin/python main.py
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+
+# Environment variables
+EnvironmentFile=/opt/receiptly/receiptly-react-backend/.env
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/receiptly
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=receiptly-backend
+
+[Install]
+WantedBy=multi-user.target

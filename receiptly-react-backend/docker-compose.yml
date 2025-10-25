@@ -38,7 +38,7 @@ services:
       DEBUG: ${DEBUG:-false}
       
       # CORS Configuration
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173,https://receiptly.leonberkemeier.de}
       
       # Authentication Configuration
       SECRET_KEY: ${SECRET_KEY:-your-very-secure-secret-key-change-this-in-production-make-it-long-and-random}
