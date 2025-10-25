@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prisma import Prisma
 
-from app.api.routes import receipts, items, auth
+from app.api.routes import receipts, items, auth, transactions
 from app.core.config import get_settings
 from app.core.database import set_database
 
@@ -63,6 +63,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(receipts.router, prefix="/api/receipts", tags=["receipts"])
 app.include_router(items.router, prefix="/api/items", tags=["items"])
+app.include_router(transactions.router, prefix="/api/transactions", tags=["transactions"])
 
 
 @app.get("/")

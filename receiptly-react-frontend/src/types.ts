@@ -41,3 +41,42 @@ export const DatabaseReceiptSchema = z.object({
 });
 
 export type DatabaseReceipt = z.infer<typeof DatabaseReceiptSchema>;
+
+// Transaction types
+export interface Transaction {
+  id: string;
+  userId: string;
+  type: 'income' | 'expense';
+  amount: number;
+  category: string;
+  description?: string;
+  date: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TransactionCreate {
+  type: 'income' | 'expense';
+  amount: number;
+  category: string;
+  description?: string;
+  date: string;
+}
+
+export interface TransactionStats {
+  totalIncome: number;
+  totalExpenses: number;
+  netBalance: number;
+  transactionCount: number;
+  incomeCount: number;
+  expenseCount: number;
+}
+
+export interface MonthlyStats {
+  year: number;
+  month: number;
+  totalIncome: number;
+  totalExpenses: number;
+  netBalance: number;
+  transactionCount: number;
+}

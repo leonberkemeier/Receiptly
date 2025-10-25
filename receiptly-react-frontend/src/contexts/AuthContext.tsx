@@ -9,6 +9,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
@@ -28,18 +29,20 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Check if user is logged in on app start
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
+    const storedToken = localStorage.getItem('auth_token');
     const userData = localStorage.getItem('user_data');
     
-    if (token && userData) {
+    if (storedToken && userData) {
       try {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
+        setToken(storedToken);
       } catch (e) {
         console.error('Failed to parse user data:', e);
         localStorage.removeItem('auth_token');
@@ -66,9 +69,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await response.json();
 
       if (response.ok && result.success) {
-        const { user: userData, token } = result;
+        const { user: userData, token: authToken } = result;
         setUser(userData);
-        localStorage.setItem('auth_token', token);
+        setToken(authToken);
+        localStorage.setItem('auth_token', authToken);
         localStorage.setItem('user_data', JSON.stringify(userData));
         return true;
       } else {
@@ -100,9 +104,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await response.json();
 
       if (response.ok && result.success) {
-        const { user: userData, token } = result;
+        const { user: userData, token: authToken } = result;
         setUser(userData);
-        localStorage.setItem('auth_token', token);
+        setToken(authToken);
+        localStorage.setItem('auth_token', authToken);
         localStorage.setItem('user_data', JSON.stringify(userData));
         return true;
       } else {
@@ -120,6 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
+    setToken(null);
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user_data');
     sessionStorage.removeItem('receiptData'); // Clear any receipt data
@@ -127,6 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value = {
     user,
+    token,
     login,
     register,
     logout,

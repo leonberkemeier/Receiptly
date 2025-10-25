@@ -17,8 +17,8 @@ const Layout: React.FC = () => {
         </div>
         <div className="flex-none">
           <ul className="menu menu-horizontal px-1">
-            <li><Link to="/">Upload</Link></li>
             <li><Link to="/receipts">Receipts</Link></li>
+            <li><Link to="/tracker">Tracker</Link></li>
           </ul>
           
           {/* User Menu */}
