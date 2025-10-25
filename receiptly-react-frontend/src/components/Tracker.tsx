@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import TransactionForm from './TransactionForm';
 import { Transaction, TransactionCreate, TransactionStats, MonthlyStats } from '../types';
 import {
@@ -19,6 +20,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 const Tracker: React.FC = () => {
   const { user, token } = useAuth();
+  const { theme } = useTheme();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [stats, setStats] = useState<TransactionStats | null>(null);
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats[]>([]);
@@ -26,6 +28,10 @@ const Tracker: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState<'all' | 'income' | 'expense'>('all');
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
 
   useEffect(() => {
     if (user && token) {
@@ -134,10 +140,23 @@ const Tracker: React.FC = () => {
     return new Date(2000, month - 1).toLocaleDateString('en-US', { month: 'short' });
   };
 
+  const getAvailableMonths = () => {
+    if (transactions.length === 0) return [];
+
+    const months = new Set<string>();
+    transactions.forEach(t => {
+      const date = new Date(t.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      months.add(monthKey);
+    });
+
+    return Array.from(months).sort().reverse();
+  };
+
   const getDailyChartData = () => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    const [year, month] = selectedMonth.split('-').map(Number);
+    const currentMonth = month - 1; // JS months are 0-indexed
+    const currentYear = year;
     
     // Filter transactions for current month
     const currentMonthTransactions = transactions.filter(t => {
@@ -175,9 +194,9 @@ const Tracker: React.FC = () => {
   };
 
   const getNetBalanceData = () => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    const [year, month] = selectedMonth.split('-').map(Number);
+    const currentMonth = month - 1; // JS months are 0-indexed
+    const currentYear = year;
     
     // Filter transactions for current month
     const currentMonthTransactions = transactions.filter(t => {
@@ -279,12 +298,44 @@ const Tracker: React.FC = () => {
         </div>
       )}
 
-      {/* Daily Chart for Current Month */}
+      {/* Month Selector */}
+      {transactions.length > 0 && getAvailableMonths().length > 0 && (
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body">
+            <div className="flex items-center gap-4">
+              <label className="label">
+                <span className="label-text font-semibold">Select Month:</span>
+              </label>
+              <select 
+                className="select select-bordered w-full max-w-xs"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+              >
+                {getAvailableMonths().map(monthKey => {
+                  const [year, month] = monthKey.split('-');
+                  const date = new Date(parseInt(year), parseInt(month) - 1);
+                  return (
+                    <option key={monthKey} value={monthKey}>
+                      {date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Daily Chart for Selected Month */}
       {transactions.length > 0 && getDailyChartData().length > 0 && (
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
             <h2 className="card-title">
-              Daily Income vs Expenses - {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              Daily Income vs Expenses - {(() => {
+                const [year, month] = selectedMonth.split('-');
+                const date = new Date(parseInt(year), parseInt(month) - 1);
+                return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+              })()}
             </h2>
             <div className="w-full h-80">
               <ResponsiveContainer width="100%" height="100%">
@@ -292,18 +343,19 @@ const Tracker: React.FC = () => {
                   data={getDailyChartData()}
                   margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="day" />
-                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} stroke={theme === 'dark' ? '#374151' : '#e5e7eb'} />
+                  <XAxis dataKey="day" stroke={theme === 'dark' ? '#9ca3af' : '#4b5563'} />
+                  <YAxis stroke={theme === 'dark' ? '#9ca3af' : '#4b5563'} />
                   <Tooltip
                     formatter={(value: number) => formatCurrency(value)}
                     contentStyle={{
-                      backgroundColor: 'hsl(var(--b1))',
-                      border: '1px solid hsl(var(--bc) / 0.2)',
+                      backgroundColor: theme === 'dark' ? '#1f2937' : '#ffffff',
+                      border: `1px solid ${theme === 'dark' ? '#374151' : '#e5e7eb'}`,
                       borderRadius: '0.5rem',
+                      color: theme === 'dark' ? '#f3f4f6' : '#111827',
                     }}
                   />
-                  <Legend />
+                  <Legend wrapperStyle={{ color: theme === 'dark' ? '#f3f4f6' : '#111827' }} />
                   <Bar dataKey="Income" fill="#10b981" radius={[8, 8, 0, 0]} />
                   <Bar dataKey="Expenses" fill="#ef4444" radius={[8, 8, 0, 0]} />
                 </BarChart>
@@ -318,7 +370,11 @@ const Tracker: React.FC = () => {
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
             <h2 className="card-title">
-              Net Balance Development - {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              Net Balance Development - {(() => {
+                const [year, month] = selectedMonth.split('-');
+                const date = new Date(parseInt(year), parseInt(month) - 1);
+                return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+              })()}
             </h2>
             <div className="w-full h-80">
               <ResponsiveContainer width="100%" height="100%">
@@ -326,24 +382,25 @@ const Tracker: React.FC = () => {
                   data={getNetBalanceData()}
                   margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="day" />
-                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} stroke={theme === 'dark' ? '#374151' : '#e5e7eb'} />
+                  <XAxis dataKey="day" stroke={theme === 'dark' ? '#9ca3af' : '#4b5563'} />
+                  <YAxis stroke={theme === 'dark' ? '#9ca3af' : '#4b5563'} />
                   <Tooltip
                     formatter={(value: number) => formatCurrency(value)}
                     contentStyle={{
-                      backgroundColor: 'hsl(var(--b1))',
-                      border: '1px solid hsl(var(--bc) / 0.2)',
+                      backgroundColor: theme === 'dark' ? '#1f2937' : '#ffffff',
+                      border: `1px solid ${theme === 'dark' ? '#374151' : '#e5e7eb'}`,
                       borderRadius: '0.5rem',
+                      color: theme === 'dark' ? '#f3f4f6' : '#111827',
                     }}
                   />
-                  <Legend />
+                  <Legend wrapperStyle={{ color: theme === 'dark' ? '#f3f4f6' : '#111827' }} />
                   <Line 
                     type="monotone" 
                     dataKey="Balance" 
-                    stroke="#3b82f6" 
+                    stroke={theme === 'dark' ? '#60a5fa' : '#3b82f6'} 
                     strokeWidth={3}
-                    dot={{ fill: '#3b82f6', r: 4 }}
+                    dot={{ fill: theme === 'dark' ? '#60a5fa' : '#3b82f6', r: 4 }}
                     activeDot={{ r: 6 }}
                   />
                 </LineChart>
