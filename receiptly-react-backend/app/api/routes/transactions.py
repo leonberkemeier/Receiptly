@@ -4,6 +4,8 @@ API routes for transaction operations.
 
 from typing import List, Optional
 from datetime import datetime, timedelta
+import traceback
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from prisma import Prisma
@@ -58,6 +60,8 @@ async def get_transactions(
         )
         return transactions
     except Exception as e:
+        logging.error(f"Error fetching transactions: {str(e)}")
+        logging.error(traceback.format_exc())
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch transactions: {str(e)}",
