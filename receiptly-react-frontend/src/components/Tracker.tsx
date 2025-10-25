@@ -167,7 +167,7 @@ const Tracker: React.FC = () => {
       .map(day => ({
         day: `Day ${day}`,
         Income: dailyData[day].income,
-        Expenses: dailyData[day].expenses,
+        Expenses: -dailyData[day].expenses, // Negative for expenses
       }))
       .sort((a, b) => parseInt(a.day.split(' ')[1]) - parseInt(b.day.split(' ')[1]));
   };
