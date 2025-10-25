@@ -2,6 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import TransactionForm from './TransactionForm';
 import { Transaction, TransactionCreate, TransactionStats, MonthlyStats } from '../types';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -122,6 +132,46 @@ const Tracker: React.FC = () => {
     return new Date(2000, month - 1).toLocaleDateString('en-US', { month: 'short' });
   };
 
+  const getDailyChartData = () => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    // Filter transactions for current month
+    const currentMonthTransactions = transactions.filter(t => {
+      const date = new Date(t.date);
+      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    });
+
+    // Group by day
+    const dailyData: Record<string, { income: number; expenses: number }> = {};
+    
+    currentMonthTransactions.forEach(t => {
+      const date = new Date(t.date);
+      const day = date.getDate();
+      const key = `${day}`;
+      
+      if (!dailyData[key]) {
+        dailyData[key] = { income: 0, expenses: 0 };
+      }
+      
+      if (t.type === 'income') {
+        dailyData[key].income += t.amount;
+      } else {
+        dailyData[key].expenses += t.amount;
+      }
+    });
+
+    // Convert to array and sort by day
+    return Object.keys(dailyData)
+      .map(day => ({
+        day: `Day ${day}`,
+        Income: dailyData[day].income,
+        Expenses: dailyData[day].expenses,
+      }))
+      .sort((a, b) => parseInt(a.day.split(' ')[1]) - parseInt(b.day.split(' ')[1]));
+  };
+
   const filteredTransactions = transactions.filter((t) => {
     if (filter === 'all') return true;
     return t.type === filter;
@@ -185,7 +235,41 @@ const Tracker: React.FC = () => {
         </div>
       )}
 
-      {/* Monthly Overview */}
+      {/* Daily Chart for Current Month */}
+      {transactions.length > 0 && getDailyChartData().length > 0 && (
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body">
+            <h2 className="card-title">
+              Daily Income vs Expenses - {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </h2>
+            <div className="w-full h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={getDailyChartData()}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis dataKey="day" />
+                  <YAxis />
+                  <Tooltip
+                    formatter={(value: number) => formatCurrency(value)}
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--b1))',
+                      border: '1px solid hsl(var(--bc) / 0.2)',
+                      borderRadius: '0.5rem',
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="Income" fill="#10b981" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="Expenses" fill="#ef4444" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Monthly Overview Table */}
       {monthlyStats.length > 0 && (
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
