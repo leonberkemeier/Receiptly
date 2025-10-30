@@ -262,18 +262,24 @@ const Tracker: React.FC = () => {
         <h1 className="text-3xl font-bold">Financial Tracker</h1>
         <button
           className="btn btn-primary"
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => setShowForm(true)}
         >
-          {showForm ? 'Cancel' : '+ Add Transaction'}
+          + Add Transaction
         </button>
       </div>
 
-      {showForm && (
-        <TransactionForm
-          onSubmit={handleCreateTransaction}
-          onCancel={() => setShowForm(false)}
-        />
-      )}
+      {/* Transaction Modal */}
+      <dialog className={`modal ${showForm ? 'modal-open' : ''}`}>
+        <div className="modal-box max-w-2xl">
+          <TransactionForm
+            onSubmit={handleCreateTransaction}
+            onCancel={() => setShowForm(false)}
+          />
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={() => setShowForm(false)}>close</button>
+        </form>
+      </dialog>
 
       {/* Stats Cards */}
       {stats && (
