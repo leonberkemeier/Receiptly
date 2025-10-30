@@ -14,6 +14,7 @@ class TransactionBase(BaseModel):
     category: str = Field(..., min_length=1, description="Transaction category")
     description: Optional[str] = Field(None, description="Transaction description")
     date: datetime = Field(..., description="Transaction date")
+    receiptId: Optional[str] = Field(None, description="Optional receipt ID linking to a receipt")
 
 
 class TransactionCreate(TransactionBase):
@@ -28,6 +29,7 @@ class TransactionUpdate(BaseModel):
     category: Optional[str] = Field(None, min_length=1, description="Transaction category")
     description: Optional[str] = Field(None, description="Transaction description")
     date: Optional[datetime] = Field(None, description="Transaction date")
+    receiptId: Optional[str] = Field(None, description="Optional receipt ID linking to a receipt")
 
 
 class Transaction(TransactionBase):

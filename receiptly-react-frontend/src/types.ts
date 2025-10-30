@@ -51,6 +51,7 @@ export interface Transaction {
   category: string;
   description?: string;
   date: string;
+  receiptId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -61,6 +62,7 @@ export interface TransactionCreate {
   category: string;
   description?: string;
   date: string;
+  receiptId?: string;
 }
 
 export interface TransactionStats {

@@ -99,6 +99,30 @@ async def create_receipt(
             },
             include={"items": True},
         )
+        
+        # Auto-create an expense transaction for this receipt
+        try:
+            from datetime import datetime
+            
+            # Parse the receipt date
+            receipt_datetime = datetime.fromisoformat(receipt_data.date.replace('Z', '+00:00'))
+            
+            # Create transaction linked to this receipt
+            await db.transaction.create(
+                data={
+                    "userId": current_user.id,
+                    "type": "expense",
+                    "amount": float(receipt_data.total),
+                    "category": "Receipt",
+                    "description": f"Receipt from {receipt_datetime.strftime('%Y-%m-%d')}",
+                    "date": receipt_datetime,
+                    "receiptId": receipt.id,
+                }
+            )
+        except Exception as transaction_error:
+            # Log but don't fail the receipt creation
+            print(f"Warning: Failed to create transaction for receipt: {transaction_error}")
+        
         return receipt
     except Exception as e:
         raise HTTPException(
