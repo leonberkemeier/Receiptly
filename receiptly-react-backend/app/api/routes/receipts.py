@@ -3,6 +3,7 @@ API routes for receipt operations.
 """
 
 from typing import List
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from prisma import Prisma
@@ -12,6 +13,7 @@ from app.core.database import get_database
 from app.schemas.receipts import Receipt, ReceiptCreate, ReceiptUpdate
 from app.schemas.users import User
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -103,12 +105,26 @@ async def create_receipt(
         # Auto-create an expense transaction for this receipt
         try:
             from datetime import datetime
+            import logging
             
-            # Parse the receipt date
-            receipt_datetime = datetime.fromisoformat(receipt_data.date.replace('Z', '+00:00'))
+            logger_tx = logging.getLogger(__name__)
+            
+            # Parse the receipt date - handle both ISO format and simple date strings
+            try:
+                if 'T' in receipt_data.date:
+                    # ISO format datetime string
+                    receipt_datetime = datetime.fromisoformat(receipt_data.date.replace('Z', '+00:00'))
+                else:
+                    # Simple date string (YYYY-MM-DD)
+                    receipt_datetime = datetime.strptime(receipt_data.date, '%Y-%m-%d')
+            except (ValueError, AttributeError) as parse_error:
+                logger_tx.warning(f"Could not parse date '{receipt_data.date}': {parse_error}, using current time")
+                receipt_datetime = datetime.now()
+            
+            logger_tx.info(f"Creating transaction for receipt: user={current_user.id}, amount={receipt_data.total}, date={receipt_datetime}")
             
             # Create transaction linked to this receipt
-            await db.transaction.create(
+            transaction = await db.transaction.create(
                 data={
                     "userId": current_user.id,
                     "type": "expense",
@@ -119,9 +135,12 @@ async def create_receipt(
                     "receiptId": receipt.id,
                 }
             )
+            logger_tx.info(f"Transaction created successfully: {transaction.id}")
         except Exception as transaction_error:
             # Log but don't fail the receipt creation
-            print(f"Warning: Failed to create transaction for receipt: {transaction_error}")
+            import traceback
+            logger_tx.error(f"Failed to create transaction for receipt: {transaction_error}")
+            logger_tx.error(traceback.format_exc())
         
         return receipt
     except Exception as e:
@@ -180,6 +199,18 @@ async def delete_receipt(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Receipt with ID {receipt_id} not found",
             )
+        
+        # Delete linked transactions first
+        try:
+            deleted_transactions = await db.transaction.delete_many(
+                where={
+                    "receiptId": receipt_id,
+                    "userId": current_user.id,
+                }
+            )
+            logger.info(f"Deleted {deleted_transactions} transactions linked to receipt {receipt_id}")
+        except Exception as tx_error:
+            logger.warning(f"Failed to delete transactions for receipt {receipt_id}: {tx_error}")
         
         # Delete receipt (items will be deleted due to cascade)
         await db.receipt.delete(where={"id": receipt_id})

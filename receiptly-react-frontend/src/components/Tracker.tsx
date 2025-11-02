@@ -16,7 +16,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL 
 
 const Tracker: React.FC = () => {
   const { user, token } = useAuth();
@@ -49,7 +49,7 @@ const Tracker: React.FC = () => {
       };
 
       // Fetch transactions
-      const transactionsRes = await fetch(`${API_BASE_URL}/api/transactions?limit=100`, {
+      const transactionsRes = await fetch(`${API_BASE_URL}/api/transactions/?limit=100`, {
         headers,
       });
       if (!transactionsRes.ok) throw new Error('Failed to fetch transactions');
@@ -82,7 +82,7 @@ const Tracker: React.FC = () => {
 
   const handleCreateTransaction = async (transactionData: TransactionCreate) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/transactions`, {
+      const response = await fetch(`${API_BASE_URL}/api/transactions/`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

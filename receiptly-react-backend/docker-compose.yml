@@ -31,7 +31,7 @@ services:
     environment:
       # Database Configuration
       DATABASE_URL: "postgresql://receiptly:${POSTGRES_PASSWORD:-12345678}@postgres:5432/receiptly"
-      
+      ALLOWED_HOSTS: receiptly.leonberkemeier.de,localhost
       # Server Configuration
       HOST: 0.0.0.0
       PORT: 8000
